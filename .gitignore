@@ -1,0 +1,34 @@
+# Secrets and local env
+.env
+.env.*
+*.pem
+*.key
+credentials*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build/cache artifacts
+coverage/
+dist/
+build/
+
+# Exclude local Office manuals with machine metadata
+TNDS_Manual_AssetCommand_2026-03-08.docx
+

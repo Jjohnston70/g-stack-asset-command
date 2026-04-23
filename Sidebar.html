@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Stack Asset Command Data Entry</title>
+    <base target="_top">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            font-size: 13px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+            color: white;
+            padding: 16px;
+            text-align: center;
+        }
+        .header h1 { font-size: 16px; margin-bottom: 4px; }
+        .header p { font-size: 11px; opacity: 0.8; }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px 8px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 11px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+        .tab:hover { background: #f5f5f5; }
+        .tab.active {
+            color: #2563EB;
+            border-bottom-color: #2563EB;
+            font-weight: 600;
+        }
+
+        .content { padding: 16px; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1E3A5F;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #2563EB;
+            color: white;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-success {
+            background: #10B981;
+            color: white;
+        }
+        .btn-success:hover { background: #059669; }
+
+        .csv-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .csv-upload:hover {
+            border-color: #2563EB;
+            background: #f8faff;
+        }
+        .csv-upload input[type="file"] { display: none; }
+        .csv-upload .icon { font-size: 24px; margin-bottom: 8px; }
+        .csv-upload .text { font-size: 12px; color: #666; }
+
+        .template-link {
+            font-size: 11px;
+            color: #2563EB;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .template-link:hover { text-decoration: underline; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 16px 0;
+            color: #999;
+            font-size: 11px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .divider span { padding: 0 12px; }
+
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 12px;
+            display: none;
+        }
+        .status.success { background: #d1fae5; color: #065f46; display: block; }
+        .status.error { background: #fee2e2; color: #991b1b; display: block; }
+        .status.loading { background: #dbeafe; color: #1e40af; display: block; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .help-text {
+            font-size: 10px;
+            color: #888;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>G-Stack Asset Command Data Entry</h1>
+        <p>Add assets, drivers, and records</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showPanel('assets')">Assets</button>
+        <button class="tab" onclick="showPanel('drivers')">Drivers</button>
+        <button class="tab" onclick="showPanel('maintenance')">Maintenance</button>
+        <button class="tab" onclick="showPanel('costs')">Costs</button>
+    </div>
+
+    <div class="content">
+        <!-- ASSETS PANEL -->
+        <div id="panel-assets" class="panel active">
+            <div class="section">
+                <div class="section-title">
+                    <span>📤</span> Import Assets from CSV
+                </div>
+                <div class="csv-upload" onclick="document.getElementById('assetCsvFile').click()">
+                    <input type="file" id="assetCsvFile" accept=".csv" onchange="handleCsvUpload('assets', this)">
+                    <div class="icon">📁</div>
+                    <div class="text">Click to upload CSV file</div>
+                </div>
+                <a href="#" class="template-link" onclick="downloadTemplate('assets')">Download CSV template</a>
+                <div id="asset-csv-status" class="status"></div>
+            </div>
+
+            <div class="divider"><span>OR</span></div>
+
+            <div class="section">
+                <div class="section-title">
+                    <span>➕</span> Add Single Asset
+                </div>
+                <form id="assetForm" onsubmit="submitAsset(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Asset ID *</label>
+                            <input type="text" name="assetId" required placeholder="e.g., A-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Asset Name *</label>
+                            <input type="text" name="assetName" required placeholder="e.g., Red F-150">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Type *</label>
+                            <select name="assetType" required>
+                                <option value="">Select...</option>
+                                <option value="Vehicle">Vehicle</option>
+                                <option value="Equipment">Equipment</option>
+                                <option value="Tool">Tool</option>
+                                <option value="Trailer">Trailer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select name="status" required>
+                                <option value="Available">Available</option>
+                                <option value="In Use">In Use</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Location</label>
+                        <input type="text" name="location" placeholder="e.g., Main Yard">
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To</label>
+                        <input type="text" name="assignedTo" placeholder="Employee name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Last Service Date</label>
+                            <input type="date" name="lastService">
+                        </div>
+                        <div class="form-group">
+                            <label>Service Interval (Days)</label>
+                            <input type="number" name="serviceInterval" placeholder="90">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Acquisition Date</label>
+                            <input type="date" name="acquisitionDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Acquisition Cost ($)</label>
+                            <input type="number" name="acquisitionCost" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Asset</button>
+                    <div id="asset-form-status" class="status"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- DRIVERS PANEL -->
+        <div id="panel-drivers" class="panel">
+            <div class="section">
+                <div class="section-title">
+                    <span>📤</span> Import Drivers from CSV
+                </div>
+                <div class="csv-upload" onclick="document.getElementById('driverCsvFile').click()">
+                    <input type="file" id="driverCsvFile" accept=".csv" onchange="handleCsvUpload('drivers', this)">
+                    <div class="icon">📁</div>
+                    <div class="text">Click to upload CSV file</div>
+                </div>
+                <a href="#" class="template-link" onclick="downloadTemplate('drivers')">Download CSV template</a>
+                <div id="driver-csv-status" class="status"></div>
+            </div>
+
+            <div class="divider"><span>OR</span></div>
+
+            <div class="section">
+                <div class="section-title">
+                    <span>➕</span> Add Single Driver
+                </div>
+                <form id="driverForm" onsubmit="submitDriver(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Driver ID *</label>
+                            <input type="text" name="driverId" required placeholder="e.g., DRV-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Driver Name *</label>
+                            <input type="text" name="driverName" required placeholder="Full name">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select name="status" required>
+                                <option value="Active">Active</option>
+                                <option value="On Leave">On Leave</option>
+                                <option value="Suspended">Suspended</option>
+                                <option value="Terminated">Terminated</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" name="phone" placeholder="(555) 123-4567">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="driver@example.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>License Number</label>
+                            <input type="text" name="licenseNumber" placeholder="DL123456">
+                        </div>
+                        <div class="form-group">
+                            <label>License State</label>
+                            <input type="text" name="licenseState" placeholder="TX" maxlength="2">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>License Expiry</label>
+                            <input type="date" name="licenseExpiry">
+                        </div>
+                        <div class="form-group">
+                            <label>License Type</label>
+                            <select name="licenseType">
+                                <option value="">Select...</option>
+                                <option value="Class A">Class A</option>
+                                <option value="Class B">Class B</option>
+                                <option value="Class C">Class C</option>
+                                <option value="Non-CDL">Non-CDL</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>CDL Number</label>
+                            <input type="text" name="cdlNumber" placeholder="CDL789012">
+                        </div>
+                        <div class="form-group">
+                            <label>CDL Expiry</label>
+                            <input type="date" name="cdlExpiry">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Medical Card Expiry</label>
+                            <input type="date" name="medicalExpiry">
+                        </div>
+                        <div class="form-group">
+                            <label>Hire Date</label>
+                            <input type="date" name="hireDate">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Driver</button>
+                    <div id="driver-form-status" class="status"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MAINTENANCE PANEL -->
+        <div id="panel-maintenance" class="panel">
+            <div class="section">
+                <div class="section-title">
+                    <span>📤</span> Import Maintenance Records from CSV
+                </div>
+                <div class="csv-upload" onclick="document.getElementById('maintCsvFile').click()">
+                    <input type="file" id="maintCsvFile" accept=".csv" onchange="handleCsvUpload('maintenance', this)">
+                    <div class="icon">📁</div>
+                    <div class="text">Click to upload CSV file</div>
+                </div>
+                <a href="#" class="template-link" onclick="downloadTemplate('maintenance')">Download CSV template</a>
+                <div id="maint-csv-status" class="status"></div>
+            </div>
+
+            <div class="divider"><span>OR</span></div>
+
+            <div class="section">
+                <div class="section-title">
+                    <span>➕</span> Add Maintenance Record
+                </div>
+                <form id="maintForm" onsubmit="submitMaintenance(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Maintenance ID *</label>
+                            <input type="text" name="maintId" required placeholder="e.g., M-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Asset ID *</label>
+                            <input type="text" name="assetId" required placeholder="e.g., A-001">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Type *</label>
+                        <select name="serviceType" required>
+                            <option value="">Select...</option>
+                            <option value="Oil Change">Oil Change</option>
+                            <option value="Tire Rotation">Tire Rotation</option>
+                            <option value="Inspection">Inspection</option>
+                            <option value="Repair">Repair</option>
+                            <option value="Blade Sharpening">Blade Sharpening</option>
+                            <option value="Filter Replacement">Filter Replacement</option>
+                            <option value="Annual Inspection">Annual Inspection</option>
+                            <option value="DOT Physical">DOT Physical</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Scheduled Date *</label>
+                            <input type="date" name="scheduledDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Completed Date</label>
+                            <input type="date" name="completedDate">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Parts Cost ($)</label>
+                            <input type="number" name="partsCost" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Labor Cost ($)</label>
+                            <input type="number" name="laborCost" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vendor</label>
+                            <input type="text" name="vendor" placeholder="e.g., Quick Lube">
+                        </div>
+                        <div class="form-group">
+                            <label>Invoice Number</label>
+                            <input type="text" name="invoiceNumber" placeholder="e.g., INV-12345">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Service details..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Maintenance Record</button>
+                    <div id="maint-form-status" class="status"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- COSTS PANEL -->
+        <div id="panel-costs" class="panel">
+            <div class="section">
+                <div class="section-title">
+                    <span>📤</span> Import Cost Records from CSV
+                </div>
+                <div class="csv-upload" onclick="document.getElementById('costCsvFile').click()">
+                    <input type="file" id="costCsvFile" accept=".csv" onchange="handleCsvUpload('costs', this)">
+                    <div class="icon">📁</div>
+                    <div class="text">Click to upload CSV file</div>
+                </div>
+                <a href="#" class="template-link" onclick="downloadTemplate('costs')">Download CSV template</a>
+                <div id="cost-csv-status" class="status"></div>
+            </div>
+
+            <div class="divider"><span>OR</span></div>
+
+            <div class="section">
+                <div class="section-title">
+                    <span>➕</span> Add Activity/Cost Record
+                </div>
+                <form id="costForm" onsubmit="submitCost(event)">
+                    <div class="form-group">
+                        <label>Asset ID *</label>
+                        <input type="text" name="assetId" required placeholder="e.g., A-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Action Type *</label>
+                        <select name="actionType" required onchange="toggleFuelFields(this.value)">
+                            <option value="">Select...</option>
+                            <option value="Check-out">Check-out</option>
+                            <option value="Check-in">Check-in</option>
+                            <option value="Refuel">Refuel</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Incident">Incident</option>
+                            <option value="Location Update">Location Update</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Employee</label>
+                            <input type="text" name="employee" placeholder="Employee name">
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" name="location" placeholder="Location">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Odometer/Hours</label>
+                        <input type="number" name="odometer" placeholder="Current reading">
+                    </div>
+                    <div id="fuelFields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fuel Added (gallons)</label>
+                                <input type="number" name="fuelGallons" step="0.1" placeholder="0.0">
+                            </div>
+                            <div class="form-group">
+                                <label>Fuel Cost ($)</label>
+                                <input type="number" name="fuelCost" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Additional details..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                    <div id="cost-form-status" class="status"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPanel(panelId) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById('panel-' + panelId).classList.add('active');
+        }
+
+        function toggleFuelFields(actionType) {
+            const fuelFields = document.getElementById('fuelFields');
+            fuelFields.style.display = actionType === 'Refuel' ? 'block' : 'none';
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        function clearStatus(elementId) {
+            const el = document.getElementById(elementId);
+            el.className = 'status';
+            el.textContent = '';
+        }
+
+        // CSV Upload Handler
+        function handleCsvUpload(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const statusId = type === 'maintenance' ? 'maint-csv-status' : type + '-csv-status';
+            showStatus(statusId, 'Processing CSV...', 'loading');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvData = e.target.result;
+
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        if (result.success) {
+                            showStatus(statusId, result.message, 'success');
+                        } else {
+                            showStatus(statusId, result.message, 'error');
+                        }
+                        input.value = '';
+                    })
+                    .withFailureHandler(function(error) {
+                        showStatus(statusId, 'Error: ' + error.message, 'error');
+                        input.value = '';
+                    })
+                    .importCsvData(type, csvData);
+            };
+            reader.readAsText(file);
+        }
+
+        // Download CSV Template
+        function downloadTemplate(type) {
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        // Create and download the template
+                        const blob = new Blob([result.template], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = type + '_template.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                })
+                .getCsvTemplate(type);
+        }
+
+        // Form Submissions
+        function submitAsset(e) {
+            e.preventDefault();
+            const form = e.target;
+            const statusId = 'asset-form-status';
+            showStatus(statusId, 'Adding asset...', 'loading');
+
+            const data = {
+                assetId: form.assetId.value,
+                assetName: form.assetName.value,
+                assetType: form.assetType.value,
+                status: form.status.value,
+                location: form.location.value,
+                assignedTo: form.assignedTo.value,
+                lastService: form.lastService.value,
+                serviceInterval: form.serviceInterval.value,
+                acquisitionDate: form.acquisitionDate.value,
+                acquisitionCost: form.acquisitionCost.value,
+                notes: form.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showStatus(statusId, 'Asset added successfully!', 'success');
+                        form.reset();
+                    } else {
+                        showStatus(statusId, result.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showStatus(statusId, 'Error: ' + error.message, 'error');
+                })
+                .addAsset(data);
+        }
+
+        function submitDriver(e) {
+            e.preventDefault();
+            const form = e.target;
+            const statusId = 'driver-form-status';
+            showStatus(statusId, 'Adding driver...', 'loading');
+
+            const data = {
+                driverId: form.driverId.value,
+                driverName: form.driverName.value,
+                status: form.status.value,
+                phone: form.phone.value,
+                email: form.email.value,
+                licenseNumber: form.licenseNumber.value,
+                licenseState: form.licenseState.value,
+                licenseExpiry: form.licenseExpiry.value,
+                licenseType: form.licenseType.value,
+                cdlNumber: form.cdlNumber.value,
+                cdlExpiry: form.cdlExpiry.value,
+                medicalExpiry: form.medicalExpiry.value,
+                hireDate: form.hireDate.value,
+                notes: form.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showStatus(statusId, 'Driver added successfully!', 'success');
+                        form.reset();
+                    } else {
+                        showStatus(statusId, result.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showStatus(statusId, 'Error: ' + error.message, 'error');
+                })
+                .addDriver(data);
+        }
+
+        function submitMaintenance(e) {
+            e.preventDefault();
+            const form = e.target;
+            const statusId = 'maint-form-status';
+            showStatus(statusId, 'Adding maintenance record...', 'loading');
+
+            const data = {
+                maintId: form.maintId.value,
+                assetId: form.assetId.value,
+                serviceType: form.serviceType.value,
+                scheduledDate: form.scheduledDate.value,
+                completedDate: form.completedDate.value,
+                partsCost: form.partsCost.value,
+                laborCost: form.laborCost.value,
+                vendor: form.vendor.value,
+                invoiceNumber: form.invoiceNumber.value,
+                notes: form.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showStatus(statusId, 'Maintenance record added!', 'success');
+                        form.reset();
+                    } else {
+                        showStatus(statusId, result.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showStatus(statusId, 'Error: ' + error.message, 'error');
+                })
+                .addMaintenance(data);
+        }
+
+        function submitCost(e) {
+            e.preventDefault();
+            const form = e.target;
+            const statusId = 'cost-form-status';
+            showStatus(statusId, 'Adding record...', 'loading');
+
+            const data = {
+                assetId: form.assetId.value,
+                actionType: form.actionType.value,
+                employee: form.employee.value,
+                location: form.location.value,
+                odometer: form.odometer.value,
+                fuelGallons: form.fuelGallons.value,
+                fuelCost: form.fuelCost.value,
+                notes: form.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showStatus(statusId, 'Record added successfully!', 'success');
+                        form.reset();
+                        document.getElementById('fuelFields').style.display = 'none';
+                    } else {
+                        showStatus(statusId, result.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showStatus(statusId, 'Error: ' + error.message, 'error');
+                })
+                .addActivityRecord(data);
+        }
+    </script>
+</body>
+</html>

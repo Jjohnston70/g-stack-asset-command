@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Stack Asset Command Dashboard</title>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 50%, #00B4D8 100%);
+        }
+        .gradient-maintenance {
+            background: linear-gradient(135deg, #92400E 0%, #F59E0B 50%, #FCD34D 100%);
+        }
+        .gradient-compliance {
+            background: linear-gradient(135deg, #9A3412 0%, #EA580C 50%, #FB923C 100%);
+        }
+        .gradient-fuel {
+            background: linear-gradient(135deg, #581C87 0%, #7C3AED 50%, #A78BFA 100%);
+        }
+        .card-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .metric-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563EB;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-available { background: #D1FAE5; color: #065F46; }
+        .status-inuse { background: #DBEAFE; color: #1E40AF; }
+        .status-maintenance { background: #FEF3C7; color: #92400E; }
+        .status-retired { background: #E5E7EB; color: #374151; }
+        .alert-overdue { background: #FEE2E2; border-left: 4px solid #EF4444; }
+        .alert-upcoming { background: #FEF3C7; border-left: 4px solid #F59E0B; }
+        .alert-expired { background: #FEE2E2; border-left: 4px solid #DC2626; }
+        .alert-warning { background: #FEF3C7; border-left: 4px solid #D97706; }
+        .alert-ok { background: #D1FAE5; border-left: 4px solid #059669; }
+        .view-btn { transition: all 0.2s ease; }
+        .view-btn.active { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4" style="width: 40px; height: 40px; border-width: 4px;"></div>
+            <p class="text-gray-600 font-medium" id="loadingMessage">Loading dashboard...</p>
+            <p class="text-gray-400 text-sm mt-1" id="loadingSubtext">Please wait</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div id="headerBar" class="gradient-bg text-white py-4 px-6 shadow-xl">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center">
+                        <span class="text-3xl mr-3" id="headerIcon">🚀</span>
+                        <span id="companyName">G-Stack Asset Command</span> - <span id="headerTitle">FLEET DASHBOARD</span>
+                    </h1>
+                    <p class="text-blue-200 mt-1" id="headerSubtitle">Asset & Equipment Tracking</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-blue-200">Last Updated</p>
+                    <p class="text-lg font-semibold" id="lastUpdated">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Menu -->
+    <div class="bg-white shadow-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 py-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Main Actions -->
+                <div class="flex gap-2">
+                    <button onclick="refreshData()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap flex items-center gap-2">
+                        <span id="refreshIcon">📊</span> Refresh
+                    </button>
+                    <button onclick="showHelp()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition whitespace-nowrap">
+                        ❓ Help
+                    </button>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-8 w-px bg-gray-300 hidden md:block"></div>
+
+                <!-- View Switcher Section -->
+                <div class="flex gap-2 items-center">
+                    <span class="text-xs text-gray-500 font-medium uppercase tracking-wide hidden md:inline">Views:</span>
+                    <button onclick="switchView('assets')" id="btn-assets" class="view-btn px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition whitespace-nowrap text-sm active">
+                        📦 Assets
+                    </button>
+                    <button onclick="switchView('maintenance')" id="btn-maintenance" class="view-btn px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition whitespace-nowrap text-sm">
+                        🔧 Maintenance
+                    </button>
+                    <button onclick="switchView('compliance')" id="btn-compliance" class="view-btn px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition whitespace-nowrap text-sm">
+                        🚛 Compliance
+                    </button>
+                    <button onclick="switchView('fuel')" id="btn-fuel" class="view-btn px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition whitespace-nowrap text-sm">
+                        ⛽ Fuel
+                    </button>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-8 w-px bg-gray-300 hidden md:block"></div>
+
+                <!-- Close -->
+                <button onclick="closeDashboard()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition whitespace-nowrap">
+                    ✕ Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="gradient-bg text-white p-4 rounded-t-lg flex justify-between items-center">
+                <h2 class="text-xl font-bold">📚 G-Stack Asset Command Help</h2>
+                <button onclick="hideHelp()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">🚀 Dashboard Views</h3>
+                    <p class="text-sm text-gray-600">Click the view buttons to switch between different dashboards:</p>
+                    <ul class="text-sm text-gray-600 space-y-1 mt-2">
+                        <li><strong>📦 Assets:</strong> Overview of all fleet assets and their status</li>
+                        <li><strong>🔧 Maintenance:</strong> Service schedules, overdue items, upcoming work</li>
+                        <li><strong>🚛 Compliance:</strong> Driver credentials, license/CDL/medical expirations</li>
+                        <li><strong>⛽ Fuel:</strong> Fuel consumption, costs, and anomaly detection</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">📧 Send Alerts</h3>
+                    <p class="text-sm text-gray-600">Each view has a "Send Alert Email" button to email relevant alerts to the configured address.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">📋 Sheets Reference</h3>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li><strong>Assets Master:</strong> All asset records and status</li>
+                        <li><strong>Drivers:</strong> DOT compliance tracking</li>
+                        <li><strong>Activity Log:</strong> Check-out, check-in, refuel events</li>
+                        <li><strong>Maintenance Tracker:</strong> Service scheduling</li>
+                        <li><strong>Config:</strong> Email and alert settings</li>
+                    </ul>
+                </div>
+                <div class="pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">True North Data Strategies | jacob@truenorthstrategyops.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <div class="max-w-7xl mx-auto px-6 py-6">
+
+        <!-- ============================================ -->
+        <!-- ASSETS VIEW -->
+        <!-- ============================================ -->
+        <div id="view-assets" class="view-section active">
+            <!-- KPI Cards Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">TOTAL ASSETS</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" id="totalAssets">0</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-blue-600 text-sm font-medium">$<span id="totalValue">0</span> value</span>
+                            </div>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <span class="text-2xl">📦</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">AVAILABLE</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" id="availableAssets">0</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-gray-600 text-sm"><span id="inUseAssets">0</span> in use</span>
+                            </div>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">IN MAINTENANCE</p>
+                            <p class="text-3xl font-bold text-yellow-600 mt-2" id="maintenanceAssets">0</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-600 text-sm font-medium"><span id="overdueCount">0</span> overdue</span>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <span class="text-2xl">🔧</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-2 border-blue-400">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">YTD COSTS</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2">$<span id="ytdCosts">0</span></p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-gray-600 text-sm">Fuel: $<span id="fuelCosts">0</span></span>
+                            </div>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <span class="text-2xl">💰</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Asset Status</h3>
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Asset Types</h3>
+                    <canvas id="typesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-red-500 mr-2">⚠️</span> Overdue Maintenance
+                    </h3>
+                    <div id="overdueList" class="space-y-2">
+                        <p class="text-gray-500 text-sm">No overdue items</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-yellow-500 mr-2">📅</span> Upcoming (14 days)
+                    </h3>
+                    <div id="upcomingList" class="space-y-2">
+                        <p class="text-gray-500 text-sm">No upcoming maintenance</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-blue-500 mr-2">📋</span> Recent Activity
+                    </h3>
+                    <div id="recentActivity" class="space-y-2">
+                        <p class="text-gray-500 text-sm">No recent activity</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Footer -->
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-6 text-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Activity Summary</h3>
+                    <button onclick="runAction('sendDigest')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm">
+                        📧 Send Daily Digest
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+                    <div>
+                        <p class="text-gray-400 text-sm">Activity Today</p>
+                        <p class="text-xl font-bold" id="activityToday">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">This Week</p>
+                        <p class="text-xl font-bold" id="activityWeek">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Check-outs</p>
+                        <p class="text-xl font-bold text-blue-400" id="checkOuts">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Check-ins</p>
+                        <p class="text-xl font-bold text-green-400" id="checkIns">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Refuels</p>
+                        <p class="text-xl font-bold text-yellow-400" id="refuels">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- MAINTENANCE VIEW -->
+        <!-- ============================================ -->
+        <div id="view-maintenance" class="view-section">
+            <!-- Maintenance KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-red-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">OVERDUE</p>
+                            <p class="text-3xl font-bold text-red-600 mt-2" id="maint-overdue">0</p>
+                            <p class="text-red-600 text-sm mt-2">Needs immediate attention</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <span class="text-2xl">🚨</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">DUE THIS WEEK</p>
+                            <p class="text-3xl font-bold text-yellow-600 mt-2" id="maint-week">0</p>
+                            <p class="text-yellow-600 text-sm mt-2">Within 7 days</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <span class="text-2xl">⏰</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">SCHEDULED</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-2" id="maint-scheduled">0</p>
+                            <p class="text-blue-600 text-sm mt-2">Pending completion</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <span class="text-2xl">📋</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-green-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">COMPLETED (YTD)</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" id="maint-completed">0</p>
+                            <p class="text-green-600 text-sm mt-2">This year</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-red-500 mr-2">🚨</span> Overdue Maintenance
+                    </h3>
+                    <div id="maint-overdueList" class="space-y-2 max-h-80 overflow-y-auto">
+                        <p class="text-green-600 text-sm font-medium">No overdue items</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-yellow-500 mr-2">📅</span> Upcoming Maintenance
+                    </h3>
+                    <div id="maint-upcomingList" class="space-y-2 max-h-80 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">No upcoming maintenance</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Chart -->
+            <div class="bg-white rounded-lg p-6 card-shadow mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Maintenance by Service Type</h3>
+                <canvas id="maintChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Send Alert Button -->
+            <div class="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold">Maintenance Alerts</h3>
+                        <p class="text-yellow-100 text-sm">Send email with all overdue and upcoming maintenance items</p>
+                    </div>
+                    <button onclick="runAction('checkMaintenance')" class="px-6 py-3 bg-white text-yellow-600 rounded-lg hover:bg-yellow-50 transition font-semibold">
+                        📧 Send Maintenance Alert Email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- COMPLIANCE VIEW -->
+        <!-- ============================================ -->
+        <div id="view-compliance" class="view-section">
+            <!-- Compliance KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-green-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">ACTIVE DRIVERS</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" id="comp-activeDrivers">0</p>
+                            <p class="text-green-600 text-sm mt-2">Currently active</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <span class="text-2xl">👤</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-red-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">EXPIRED</p>
+                            <p class="text-3xl font-bold text-red-600 mt-2" id="comp-expired">0</p>
+                            <p class="text-red-600 text-sm mt-2">Credentials expired</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <span class="text-2xl">🚫</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">EXPIRING SOON</p>
+                            <p class="text-3xl font-bold text-yellow-600 mt-2" id="comp-expiringSoon">0</p>
+                            <p class="text-yellow-600 text-sm mt-2">Within 30 days</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <span class="text-2xl">⚠️</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-orange-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">CLEARINGHOUSE ISSUES</p>
+                            <p class="text-3xl font-bold text-orange-600 mt-2" id="comp-clearinghouse">0</p>
+                            <p class="text-orange-600 text-sm mt-2">Needs attention</p>
+                        </div>
+                        <div class="bg-orange-100 p-3 rounded-full">
+                            <span class="text-2xl">📋</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-red-500 mr-2">🚫</span> Expired Credentials
+                    </h3>
+                    <div id="comp-expiredList" class="space-y-2 max-h-80 overflow-y-auto">
+                        <p class="text-green-600 text-sm font-medium">All credentials current</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-yellow-500 mr-2">⚠️</span> Expiring Within 30 Days
+                    </h3>
+                    <div id="comp-expiringList" class="space-y-2 max-h-80 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">No credentials expiring soon</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver Table -->
+            <div class="bg-white rounded-lg p-6 card-shadow mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Driver Compliance Status</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Driver</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">License</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">CDL</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Medical</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Clearinghouse</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comp-driverTable">
+                            <tr><td colspan="5" class="px-4 py-3 text-gray-500">No driver data</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Send Alert Button -->
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 rounded-lg p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold">Compliance Alerts</h3>
+                        <p class="text-orange-100 text-sm">Send email with all credential alerts and compliance issues</p>
+                    </div>
+                    <button onclick="runAction('checkCompliance')" class="px-6 py-3 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition font-semibold">
+                        📧 Send Compliance Alert Email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- FUEL VIEW -->
+        <!-- ============================================ -->
+        <div id="view-fuel" class="view-section">
+            <!-- Fuel KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-purple-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">TOTAL FUEL (30 DAYS)</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-2"><span id="fuel-totalGallons">0</span> gal</p>
+                            <p class="text-purple-600 text-sm mt-2">Last 30 days</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <span class="text-2xl">⛽</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-green-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">TOTAL COST (30 DAYS)</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2">$<span id="fuel-totalCost">0</span></p>
+                            <p class="text-green-600 text-sm mt-2">Fuel expenses</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <span class="text-2xl">💵</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">AVG COST/GALLON</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-2">$<span id="fuel-avgCost">0.00</span></p>
+                            <p class="text-blue-600 text-sm mt-2">Average price</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <span class="text-2xl">📊</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card bg-white rounded-lg p-6 card-shadow border-l-4 border-red-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">ANOMALIES DETECTED</p>
+                            <p class="text-3xl font-bold text-red-600 mt-2" id="fuel-anomalies">0</p>
+                            <p class="text-red-600 text-sm mt-2">Unusual patterns</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <span class="text-2xl">🚨</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fuel Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Fuel by Asset (Top 5)</h3>
+                    <canvas id="fuelByAssetChart" width="400" height="200"></canvas>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost by Asset (Top 5)</h3>
+                    <canvas id="costByAssetChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Fuel Details -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-red-500 mr-2">🚨</span> Fuel Anomalies
+                    </h3>
+                    <div id="fuel-anomalyList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-green-600 text-sm font-medium">No anomalies detected</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span class="text-blue-500 mr-2">📋</span> Recent Refuels
+                    </h3>
+                    <div id="fuel-recentList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">No recent refuels</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Alert Button -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold">Fuel Anomaly Alerts</h3>
+                        <p class="text-purple-100 text-sm">Send email with unusual fuel consumption patterns</p>
+                    </div>
+                    <button onclick="runAction('checkFuel')" class="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold">
+                        📧 Send Fuel Alert Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SPREADSHEET_ID = '<?= spreadsheetId ?>';
+        let statusChart = null;
+        let typesChart = null;
+        let maintChart = null;
+        let fuelByAssetChart = null;
+        let costByAssetChart = null;
+        let currentView = 'assets';
+        let dashboardData = null;
+
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString();
+        }
+
+        function switchView(view) {
+            currentView = view;
+
+            // Update button states
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + view).classList.add('active');
+
+            // Update view sections
+            document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+
+            // Update header
+            const headerConfig = {
+                assets: { icon: '🚀', title: 'FLEET DASHBOARD', subtitle: 'Asset & Equipment Tracking', gradient: 'gradient-bg' },
+                maintenance: { icon: '🔧', title: 'MAINTENANCE', subtitle: 'Service & Repair Tracking', gradient: 'gradient-maintenance' },
+                compliance: { icon: '🚛', title: 'DRIVER COMPLIANCE', subtitle: 'DOT & Credential Tracking', gradient: 'gradient-compliance' },
+                fuel: { icon: '⛽', title: 'FUEL TRACKING', subtitle: 'Consumption & Cost Analysis', gradient: 'gradient-fuel' }
+            };
+
+            const config = headerConfig[view];
+            document.getElementById('headerIcon').textContent = config.icon;
+            document.getElementById('headerTitle').textContent = config.title;
+            document.getElementById('headerSubtitle').textContent = config.subtitle;
+
+            const headerBar = document.getElementById('headerBar');
+            headerBar.className = config.gradient + ' text-white py-4 px-6 shadow-xl';
+
+            // Load view-specific data if needed
+            if (dashboardData) {
+                updateViewData(view);
+            }
+        }
+
+        function loadDashboardData() {
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    dashboardData = data;
+                    updateDashboard(data);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                })
+                .withFailureHandler(handleError)
+                .getDashboardData(SPREADSHEET_ID);
+        }
+
+        function updateDashboard(data) {
+            console.log('Dashboard data:', data);
+
+            // Header
+            if (data.companyName) {
+                document.getElementById('companyName').textContent = data.companyName;
+            }
+            document.getElementById('lastUpdated').textContent = data.lastUpdated;
+
+            // Update Assets View
+            updateAssetsView(data);
+
+            // Update other views
+            updateViewData(currentView);
+        }
+
+        function updateAssetsView(data) {
+            // Asset KPIs
+            const assets = data.assets;
+            document.getElementById('totalAssets').textContent = assets.total;
+            document.getElementById('totalValue').textContent = formatNumber(assets.totalValue);
+            document.getElementById('availableAssets').textContent = assets.available;
+            document.getElementById('inUseAssets').textContent = assets.inUse;
+            document.getElementById('maintenanceAssets').textContent = assets.maintenance;
+
+            // Maintenance KPIs
+            const maint = data.maintenance;
+            document.getElementById('overdueCount').textContent = maint.overdue;
+
+            // Cost KPIs
+            const costs = data.costs;
+            document.getElementById('ytdCosts').textContent = formatNumber(costs.ytdCosts);
+            document.getElementById('fuelCosts').textContent = formatNumber(costs.fuelCosts);
+
+            // Activity KPIs
+            const activity = data.activity;
+            document.getElementById('activityToday').textContent = activity.today;
+            document.getElementById('activityWeek').textContent = activity.thisWeek;
+            document.getElementById('checkOuts').textContent = activity.checkOuts;
+            document.getElementById('checkIns').textContent = activity.checkIns;
+            document.getElementById('refuels').textContent = activity.refuels;
+
+            // Update lists
+            updateOverdueList(maint.overdueList);
+            updateUpcomingList(maint.upcoming);
+            updateRecentActivity(activity.recentActivity);
+
+            // Update charts
+            updateCharts(data.charts);
+        }
+
+        function updateViewData(view) {
+            if (!dashboardData) return;
+
+            switch(view) {
+                case 'maintenance':
+                    updateMaintenanceView(dashboardData);
+                    break;
+                case 'compliance':
+                    if (dashboardData.compliance) {
+                        updateComplianceView(dashboardData.compliance);
+                    } else {
+                        loadComplianceData();
+                    }
+                    break;
+                case 'fuel':
+                    if (dashboardData.fuel) {
+                        updateFuelView(dashboardData.fuel);
+                    } else {
+                        loadFuelData();
+                    }
+                    break;
+            }
+        }
+
+        function updateMaintenanceView(data) {
+            const maint = data.maintenance;
+
+            document.getElementById('maint-overdue').textContent = maint.overdue;
+            document.getElementById('maint-scheduled').textContent = maint.pending;
+            document.getElementById('maint-completed').textContent = maint.completed;
+
+            // Count due this week
+            const dueThisWeek = maint.upcoming ? maint.upcoming.filter(item => item.daysUntil <= 7).length : 0;
+            document.getElementById('maint-week').textContent = dueThisWeek;
+
+            // Update lists
+            updateMaintenanceOverdueList(maint.overdueList);
+            updateMaintenanceUpcomingList(maint.upcoming);
+
+            // Update chart
+            updateMaintenanceChart(data);
+        }
+
+        function updateMaintenanceOverdueList(items) {
+            const container = document.getElementById('maint-overdueList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-green-600 text-sm font-medium">✓ No overdue maintenance</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="alert-overdue p-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${item.assetName || item.assetId}</p>
+                                <p class="text-xs text-gray-600">${item.serviceType}</p>
+                            </div>
+                            <span class="text-xs font-bold text-red-600">${item.daysOverdue} days overdue</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateMaintenanceUpcomingList(items) {
+            const container = document.getElementById('maint-upcomingList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No upcoming maintenance</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const urgentClass = item.daysUntil <= 3 ? 'alert-overdue' : 'alert-upcoming';
+                html += `
+                    <div class="${urgentClass} p-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${item.assetName || item.assetId}</p>
+                                <p class="text-xs text-gray-600">${item.serviceType} - ${item.dueDate}</p>
+                            </div>
+                            <span class="text-xs font-bold ${item.daysUntil <= 3 ? 'text-red-600' : 'text-yellow-600'}">${item.daysUntil} days</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateMaintenanceChart(data) {
+            if (maintChart) maintChart.destroy();
+
+            const ctx = document.getElementById('maintChart').getContext('2d');
+            maintChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Overdue', 'Scheduled', 'Completed'],
+                    datasets: [{
+                        label: 'Maintenance Items',
+                        data: [data.maintenance.overdue, data.maintenance.pending, data.maintenance.completed],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#10B981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function loadComplianceData() {
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    dashboardData.compliance = data;
+                    updateComplianceView(data);
+                })
+                .withFailureHandler(handleError)
+                .getComplianceDashboardData(SPREADSHEET_ID);
+        }
+
+        function updateComplianceView(data) {
+            document.getElementById('comp-activeDrivers').textContent = data.activeDrivers || 0;
+            document.getElementById('comp-expired').textContent = data.expiredCount || 0;
+            document.getElementById('comp-expiringSoon').textContent = data.expiringSoonCount || 0;
+            document.getElementById('comp-clearinghouse').textContent = data.clearinghouseIssues || 0;
+
+            updateComplianceExpiredList(data.expiredList);
+            updateComplianceExpiringList(data.expiringList);
+            updateDriverTable(data.drivers);
+        }
+
+        function updateComplianceExpiredList(items) {
+            const container = document.getElementById('comp-expiredList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-green-600 text-sm font-medium">✓ All credentials current</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="alert-expired p-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${item.driverName}</p>
+                                <p class="text-xs text-gray-600">${item.credentialType} - Expired ${item.expiredDate}</p>
+                            </div>
+                            <span class="text-xs font-bold text-red-600">EXPIRED</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateComplianceExpiringList(items) {
+            const container = document.getElementById('comp-expiringList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No credentials expiring soon</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const urgentClass = item.daysUntil <= 7 ? 'alert-expired' : 'alert-warning';
+                html += `
+                    <div class="${urgentClass} p-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${item.driverName}</p>
+                                <p class="text-xs text-gray-600">${item.credentialType} - Expires ${item.expiryDate}</p>
+                            </div>
+                            <span class="text-xs font-bold ${item.daysUntil <= 7 ? 'text-red-600' : 'text-yellow-600'}">${item.daysUntil} days</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateDriverTable(drivers) {
+            const container = document.getElementById('comp-driverTable');
+            if (!drivers || drivers.length === 0) {
+                container.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-gray-500">No driver data available</td></tr>';
+                return;
+            }
+
+            let html = '';
+            drivers.forEach(driver => {
+                html += `
+                    <tr class="border-b border-gray-100">
+                        <td class="px-4 py-3 font-medium">${driver.name}</td>
+                        <td class="px-4 py-3">${getStatusBadge(driver.licenseStatus, driver.licenseDays)}</td>
+                        <td class="px-4 py-3">${getStatusBadge(driver.cdlStatus, driver.cdlDays)}</td>
+                        <td class="px-4 py-3">${getStatusBadge(driver.medicalStatus, driver.medicalDays)}</td>
+                        <td class="px-4 py-3">${getClearinghouseBadge(driver.clearinghouse)}</td>
+                    </tr>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function getStatusBadge(status, days) {
+            if (status === 'expired') {
+                return '<span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">Expired</span>';
+            } else if (status === 'expiring' && days !== undefined) {
+                return `<span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">${days}d</span>`;
+            } else if (status === 'ok') {
+                return '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800">OK</span>';
+            }
+            return '<span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">N/A</span>';
+        }
+
+        function getClearinghouseBadge(status) {
+            if (status === 'Clear') {
+                return '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Clear</span>';
+            } else if (status === 'Violation') {
+                return '<span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">Violation</span>';
+            } else if (status === 'Pending Query') {
+                return '<span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">Pending</span>';
+            }
+            return '<span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">N/A</span>';
+        }
+
+        function loadFuelData() {
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    dashboardData.fuel = data;
+                    updateFuelView(data);
+                })
+                .withFailureHandler(handleError)
+                .getFuelDashboardData(SPREADSHEET_ID);
+        }
+
+        function updateFuelView(data) {
+            document.getElementById('fuel-totalGallons').textContent = formatNumber(data.totalGallons || 0);
+            document.getElementById('fuel-totalCost').textContent = formatNumber(data.totalCost || 0);
+            document.getElementById('fuel-avgCost').textContent = (data.avgCostPerGallon || 0).toFixed(2);
+            document.getElementById('fuel-anomalies').textContent = data.anomalyCount || 0;
+
+            updateFuelAnomalyList(data.anomalies);
+            updateFuelRecentList(data.recentRefuels);
+            updateFuelCharts(data);
+        }
+
+        function updateFuelAnomalyList(items) {
+            const container = document.getElementById('fuel-anomalyList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-green-600 text-sm font-medium">✓ No anomalies detected</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="alert-overdue p-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${item.assetName || item.assetId}</p>
+                                <p class="text-xs text-gray-600">${item.amount} gal (avg: ${item.average} gal)</p>
+                            </div>
+                            <span class="text-xs font-bold text-red-600">${item.variance}% variance</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateFuelRecentList(items) {
+            const container = document.getElementById('fuel-recentList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No recent refuels</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">${item.assetName || item.assetId}</p>
+                            <p class="text-xs text-gray-500">${item.date} - ${item.employee || 'Unknown'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium">${item.gallons} gal</p>
+                            <p class="text-xs text-gray-500">$${item.cost}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateFuelCharts(data) {
+            if (fuelByAssetChart) fuelByAssetChart.destroy();
+            if (costByAssetChart) costByAssetChart.destroy();
+
+            const ctx1 = document.getElementById('fuelByAssetChart').getContext('2d');
+            fuelByAssetChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: data.topAssetsByFuel ? data.topAssetsByFuel.map(a => a.name) : [],
+                    datasets: [{
+                        label: 'Gallons',
+                        data: data.topAssetsByFuel ? data.topAssetsByFuel.map(a => a.gallons) : [],
+                        backgroundColor: '#7C3AED'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const ctx2 = document.getElementById('costByAssetChart').getContext('2d');
+            costByAssetChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: data.topAssetsByCost ? data.topAssetsByCost.map(a => a.name) : [],
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: data.topAssetsByCost ? data.topAssetsByCost.map(a => a.cost) : [],
+                        backgroundColor: '#10B981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function updateOverdueList(items) {
+            const container = document.getElementById('overdueList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-green-600 text-sm font-medium">No overdue items</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="alert-overdue p-3 rounded">
+                        <p class="text-sm font-medium text-gray-800">${item.assetName}</p>
+                        <p class="text-xs text-gray-600">${item.serviceType} - ${item.daysOverdue} days overdue</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateUpcomingList(items) {
+            const container = document.getElementById('upcomingList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No upcoming maintenance</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="alert-upcoming p-3 rounded">
+                        <p class="text-sm font-medium text-gray-800">${item.assetName}</p>
+                        <p class="text-xs text-gray-600">${item.serviceType} - ${item.daysUntil} days</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateRecentActivity(items) {
+            const container = document.getElementById('recentActivity');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No recent activity</p>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const actionColors = {
+                    'Check-out': 'bg-blue-100 text-blue-800',
+                    'Check-in': 'bg-green-100 text-green-800',
+                    'Refuel': 'bg-yellow-100 text-yellow-800',
+                    'Maintenance': 'bg-purple-100 text-purple-800'
+                };
+                const colorClass = actionColors[item.action] || 'bg-gray-100 text-gray-800';
+
+                html += `
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">${item.assetName || item.assetId}</p>
+                            <p class="text-xs text-gray-500">${item.employee || '-'}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded ${colorClass}">${item.action}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateCharts(chartData) {
+            if (statusChart) statusChart.destroy();
+            if (typesChart) typesChart.destroy();
+
+            const ctx1 = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.statusLabels,
+                    datasets: [{
+                        data: chartData.statusCounts,
+                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#6B7280']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            const ctx2 = document.getElementById('typesChart').getContext('2d');
+            const typeColors = ['#1E3A5F', '#2563EB', '#00B4D8', '#06B6D4', '#14B8A6'];
+
+            typesChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: chartData.assetTypes.length > 0 ? chartData.assetTypes : ['No data'],
+                    datasets: [{
+                        label: 'Assets',
+                        data: chartData.assetTypeCounts.length > 0 ? chartData.assetTypeCounts : [0],
+                        backgroundColor: typeColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function refreshData() {
+            document.getElementById('refreshIcon').textContent = '⏳';
+            showLoading('Refreshing dashboard...', 'Fetching latest data');
+            dashboardData = null; // Clear cached data
+            loadDashboardData();
+            setTimeout(() => { document.getElementById('refreshIcon').textContent = '📊'; }, 1000);
+        }
+
+        function showLoading(message, subtext) {
+            document.getElementById('loadingMessage').textContent = message || 'Loading...';
+            document.getElementById('loadingSubtext').textContent = subtext || 'Please wait';
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function runAction(action) {
+            const actionConfig = {
+                'checkMaintenance': { msg: 'Sending maintenance alerts...', sub: 'Preparing email report' },
+                'checkCompliance': { msg: 'Sending compliance alerts...', sub: 'Checking driver credentials' },
+                'checkFuel': { msg: 'Sending fuel alerts...', sub: 'Analyzing consumption data' },
+                'sendDigest': { msg: 'Sending daily digest...', sub: 'Preparing summary email' }
+            };
+
+            const config = actionConfig[action];
+            if (!config) return;
+
+            showLoading(config.msg, config.sub);
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    hideLoading();
+                    if (result && result.message) {
+                        showNotification(result.message, result.success ? 'success' : 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showNotification('Error: ' + error.message, 'error');
+                })
+                .executeDashboardAction(action, SPREADSHEET_ID);
+        }
+
+        function closeDashboard() {
+            if (typeof google !== 'undefined' && google.script && google.script.host) {
+                google.script.host.close();
+                return;
+            }
+            if (window.history.length > 1) {
+                window.history.back();
+                return;
+            }
+            window.close();
+        }
+
+        function showNotification(message, type) {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 4000);
+        }
+
+        function showHelp() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function hideHelp() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        function handleError(error) {
+            hideLoading();
+            console.error('Error:', error);
+            showNotification('Error loading data: ' + error.message, 'error');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') hideHelp();
+        });
+
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+    </script>
+</body>
+</html>
+

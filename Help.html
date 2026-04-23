@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Stack Asset Command User Manual</title>
+    <base target="_top">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 4px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+
+        .nav {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 24px;
+            position: sticky;
+            top: 80px;
+            z-index: 99;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: #f0f0f0; }
+        .nav-btn.active {
+            background: #2563EB;
+            color: white;
+            border-color: #2563EB;
+        }
+
+        .content { padding: 24px; max-width: 900px; margin: 0 auto; }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        .section.active { display: block; }
+
+        h2 {
+            color: #1E3A5F;
+            font-size: 20px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2563EB;
+        }
+        h3 {
+            color: #2563EB;
+            font-size: 16px;
+            margin: 20px 0 12px 0;
+        }
+        h4 {
+            color: #555;
+            font-size: 14px;
+            margin: 16px 0 8px 0;
+        }
+
+        p { margin-bottom: 12px; }
+
+        ul, ol {
+            margin: 12px 0 12px 24px;
+        }
+        li { margin-bottom: 8px; }
+
+        .tip {
+            background: #EFF6FF;
+            border-left: 4px solid #2563EB;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .tip-title {
+            font-weight: 600;
+            color: #1E40AF;
+            margin-bottom: 4px;
+        }
+
+        .warning {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning-title {
+            font-weight: 600;
+            color: #92400E;
+            margin-bottom: 4px;
+        }
+
+        .code-block {
+            background: #1E293B;
+            color: #E2E8F0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background: #F1F5F9;
+            font-weight: 600;
+            color: #1E3A5F;
+        }
+        tr:nth-child(even) { background: #F8FAFC; }
+
+        .icon { margin-right: 8px; }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            margin: 16px 0;
+            padding: 16px;
+            background: #F8FAFC;
+            border-radius: 8px;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: #2563EB;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-content { flex: 1; }
+        .step-title { font-weight: 600; margin-bottom: 4px; }
+
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: #666;
+            font-size: 12px;
+        }
+        .footer a { color: #2563EB; }
+
+        .close-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            background: #2563EB;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        .close-btn:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>G-Stack Asset Command User Manual</h1>
+        <p>Complete guide to fleet and asset tracking</p>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="showSection('getting-started')">Getting Started</button>
+        <button class="nav-btn" onclick="showSection('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="showSection('data-entry')">Data Entry</button>
+        <button class="nav-btn" onclick="showSection('csv-import')">CSV Import</button>
+        <button class="nav-btn" onclick="showSection('sheets')">Sheet Reference</button>
+        <button class="nav-btn" onclick="showSection('alerts')">Alerts & Reports</button>
+        <button class="nav-btn" onclick="showSection('troubleshooting')">Troubleshooting</button>
+    </div>
+
+    <div class="content">
+        <!-- GETTING STARTED -->
+        <div id="getting-started" class="section active">
+            <h2>Getting Started</h2>
+
+            <h3>Initial Setup</h3>
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-title">Build the Template</div>
+                    <p>Go to menu: <strong>🚗 Tools > 1. Build Complete Template</strong></p>
+                    <p>This creates all necessary sheets with proper headers, formatting, and formulas.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-title">Setup Dashboard 2</div>
+                    <p>Go to menu: <strong>🚗 Tools > 2. Setup Dashboard 2</strong></p>
+                    <p>Creates the secondary dashboard with additional metrics and charts.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-title">Configure Settings</div>
+                    <p>Open the <strong>Config</strong> sheet and update:</p>
+                    <ul>
+                        <li>Alert email address</li>
+                        <li>Company phone number</li>
+                        <li>Fuel anomaly threshold percentage</li>
+                        <li>Maintenance alert days</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <div class="step-title">Add Your Data</div>
+                    <p>Use the <strong>Data Entry</strong> sidebar or import CSV files to add your assets, drivers, and records.</p>
+                </div>
+            </div>
+
+            <div class="tip">
+                <div class="tip-title">Pro Tip</div>
+                <p>Use <strong>3. Add Test Data</strong> to see example data and understand how the system works before adding your own.</p>
+            </div>
+
+            <h3>Menu Overview</h3>
+            <table>
+                <tr>
+                    <th>Menu Item</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Open Dashboard</td>
+                    <td>Opens the interactive HTML dashboard with charts and metrics</td>
+                </tr>
+                <tr>
+                    <td>Data Entry</td>
+                    <td>Opens sidebar for adding assets, drivers, maintenance, and costs</td>
+                </tr>
+                <tr>
+                    <td>User Manual</td>
+                    <td>Opens this help documentation</td>
+                </tr>
+                <tr>
+                    <td>Send Daily Digest</td>
+                    <td>Emails a summary of all fleet activity and alerts</td>
+                </tr>
+                <tr>
+                    <td>Check Maintenance Due</td>
+                    <td>Sends email alert for overdue and upcoming maintenance</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="section">
+            <h2>Dashboard Guide</h2>
+
+            <h3>Opening the Dashboard</h3>
+            <p>Go to menu: <strong>🚗 Tools > Open Dashboard</strong></p>
+            <p>The dashboard opens in a popup window with interactive charts and real-time data.</p>
+
+            <h3>Dashboard Views</h3>
+            <p>The dashboard has four main views, accessible via the colored buttons at the top:</p>
+
+            <h4>Assets View (Blue)</h4>
+            <ul>
+                <li><strong>Total Assets</strong> - Count and total value of all assets</li>
+                <li><strong>Available/In Use</strong> - Current availability status</li>
+                <li><strong>In Maintenance</strong> - Assets currently being serviced</li>
+                <li><strong>YTD Costs</strong> - Year-to-date maintenance and fuel costs</li>
+                <li><strong>Charts</strong> - Asset status distribution and types breakdown</li>
+                <li><strong>Activity Feed</strong> - Recent check-outs, check-ins, and refuels</li>
+            </ul>
+
+            <h4>Maintenance View (Yellow/Orange)</h4>
+            <ul>
+                <li><strong>Overdue</strong> - Count of overdue maintenance items</li>
+                <li><strong>Due This Week</strong> - Upcoming maintenance within 7 days</li>
+                <li><strong>Scheduled</strong> - Total pending maintenance</li>
+                <li><strong>Completed (YTD)</strong> - Maintenance completed this year</li>
+                <li><strong>Lists</strong> - Detailed overdue and upcoming items</li>
+            </ul>
+
+            <h4>Compliance View (Orange/Red)</h4>
+            <ul>
+                <li><strong>Active Drivers</strong> - Number of active drivers</li>
+                <li><strong>Expired</strong> - Credentials that have expired</li>
+                <li><strong>Expiring Soon</strong> - Credentials expiring within 30 days</li>
+                <li><strong>Clearinghouse Issues</strong> - Drivers with DOT clearinghouse flags</li>
+                <li><strong>Driver Table</strong> - Status of all driver credentials</li>
+            </ul>
+
+            <h4>Fuel View (Purple)</h4>
+            <ul>
+                <li><strong>Total Fuel (30 Days)</strong> - Gallons consumed</li>
+                <li><strong>Total Cost</strong> - Fuel expenses</li>
+                <li><strong>Avg Cost/Gallon</strong> - Average fuel price</li>
+                <li><strong>Anomalies</strong> - Unusual fuel consumption patterns</li>
+                <li><strong>Charts</strong> - Top 5 consumers by fuel and cost</li>
+            </ul>
+
+            <h3>Sending Alert Emails</h3>
+            <p>Each view has a "Send Alert Email" button at the bottom. Clicking it sends an email to the configured alert address with relevant information for that view.</p>
+
+            <div class="tip">
+                <div class="tip-title">Refresh Data</div>
+                <p>Click the blue "Refresh" button to reload all dashboard data with the latest information from your sheets.</p>
+            </div>
+        </div>
+
+        <!-- DATA ENTRY -->
+        <div id="data-entry" class="section">
+            <h2>Manual Data Entry</h2>
+
+            <h3>Opening Data Entry</h3>
+            <p>Go to menu: <strong>🚗 Tools > Data Entry</strong></p>
+            <p>A sidebar opens on the right with four tabs: Assets, Drivers, Maintenance, and Costs.</p>
+
+            <h3>Adding Assets</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Asset ID</td>
+                    <td>Yes</td>
+                    <td>Unique identifier (e.g., A-001, VEH-101)</td>
+                </tr>
+                <tr>
+                    <td>Asset Name</td>
+                    <td>Yes</td>
+                    <td>Descriptive name (e.g., "Red F-150", "Forklift #3")</td>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td>Yes</td>
+                    <td>Vehicle, Equipment, Tool, Trailer, or Other</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>Yes</td>
+                    <td>Available, In Use, Maintenance, or Retired</td>
+                </tr>
+                <tr>
+                    <td>Current Location</td>
+                    <td>No</td>
+                    <td>Where the asset is currently located</td>
+                </tr>
+                <tr>
+                    <td>Assigned To</td>
+                    <td>No</td>
+                    <td>Employee currently using the asset</td>
+                </tr>
+                <tr>
+                    <td>Last Service Date</td>
+                    <td>No</td>
+                    <td>Date of most recent service</td>
+                </tr>
+                <tr>
+                    <td>Service Interval</td>
+                    <td>No</td>
+                    <td>Days between required services</td>
+                </tr>
+                <tr>
+                    <td>Acquisition Date</td>
+                    <td>No</td>
+                    <td>When the asset was purchased</td>
+                </tr>
+                <tr>
+                    <td>Acquisition Cost</td>
+                    <td>No</td>
+                    <td>Purchase price in dollars</td>
+                </tr>
+            </table>
+
+            <h3>Adding Drivers</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Driver ID</td>
+                    <td>Yes</td>
+                    <td>Unique identifier (e.g., DRV-001)</td>
+                </tr>
+                <tr>
+                    <td>Driver Name</td>
+                    <td>Yes</td>
+                    <td>Full name of the driver</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>Yes</td>
+                    <td>Active, On Leave, Suspended, or Terminated</td>
+                </tr>
+                <tr>
+                    <td>Phone</td>
+                    <td>No</td>
+                    <td>Contact phone number</td>
+                </tr>
+                <tr>
+                    <td>Email</td>
+                    <td>No</td>
+                    <td>Contact email address</td>
+                </tr>
+                <tr>
+                    <td>License Number</td>
+                    <td>No</td>
+                    <td>State driver's license number</td>
+                </tr>
+                <tr>
+                    <td>License Expiry</td>
+                    <td>No</td>
+                    <td>When the license expires (tracked for alerts)</td>
+                </tr>
+                <tr>
+                    <td>CDL Number</td>
+                    <td>No</td>
+                    <td>Commercial Driver License number</td>
+                </tr>
+                <tr>
+                    <td>CDL Expiry</td>
+                    <td>No</td>
+                    <td>When CDL expires (tracked for alerts)</td>
+                </tr>
+                <tr>
+                    <td>Medical Card Expiry</td>
+                    <td>No</td>
+                    <td>DOT medical certificate expiration</td>
+                </tr>
+            </table>
+
+            <h3>Adding Maintenance Records</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Maintenance ID</td>
+                    <td>Yes</td>
+                    <td>Unique identifier (e.g., M-001)</td>
+                </tr>
+                <tr>
+                    <td>Asset ID</td>
+                    <td>Yes</td>
+                    <td>ID of the asset being serviced</td>
+                </tr>
+                <tr>
+                    <td>Service Type</td>
+                    <td>Yes</td>
+                    <td>Type of service performed</td>
+                </tr>
+                <tr>
+                    <td>Scheduled Date</td>
+                    <td>Yes</td>
+                    <td>When service is/was scheduled</td>
+                </tr>
+                <tr>
+                    <td>Completed Date</td>
+                    <td>No</td>
+                    <td>When service was completed (leave blank if pending)</td>
+                </tr>
+                <tr>
+                    <td>Parts Cost</td>
+                    <td>No</td>
+                    <td>Cost of parts in dollars</td>
+                </tr>
+                <tr>
+                    <td>Labor Cost</td>
+                    <td>No</td>
+                    <td>Cost of labor in dollars</td>
+                </tr>
+                <tr>
+                    <td>Vendor</td>
+                    <td>No</td>
+                    <td>Service provider name</td>
+                </tr>
+                <tr>
+                    <td>Invoice Number</td>
+                    <td>No</td>
+                    <td>Vendor invoice reference</td>
+                </tr>
+            </table>
+
+            <h3>Adding Activity/Cost Records</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Asset ID</td>
+                    <td>Yes</td>
+                    <td>ID of the asset</td>
+                </tr>
+                <tr>
+                    <td>Action Type</td>
+                    <td>Yes</td>
+                    <td>Check-out, Check-in, Refuel, Maintenance, Incident, Location Update</td>
+                </tr>
+                <tr>
+                    <td>Employee</td>
+                    <td>No</td>
+                    <td>Who performed the action</td>
+                </tr>
+                <tr>
+                    <td>Location</td>
+                    <td>No</td>
+                    <td>Where the action occurred</td>
+                </tr>
+                <tr>
+                    <td>Odometer/Hours</td>
+                    <td>No</td>
+                    <td>Current meter reading</td>
+                </tr>
+                <tr>
+                    <td>Fuel Gallons</td>
+                    <td>No*</td>
+                    <td>Amount of fuel added (for Refuel only)</td>
+                </tr>
+                <tr>
+                    <td>Fuel Cost</td>
+                    <td>No*</td>
+                    <td>Total fuel cost (for Refuel only)</td>
+                </tr>
+            </table>
+
+            <div class="tip">
+                <div class="tip-title">Auto-Status Updates</div>
+                <p>When you log a Check-out, the asset status automatically changes to "In Use". Check-in changes it back to "Available".</p>
+            </div>
+        </div>
+
+        <!-- CSV IMPORT -->
+        <div id="csv-import" class="section">
+            <h2>CSV Import Guide</h2>
+
+            <h3>Preparing CSV Files</h3>
+            <p>CSV (Comma-Separated Values) files can be created in Excel, Google Sheets, or any text editor.</p>
+
+            <div class="warning">
+                <div class="warning-title">Important</div>
+                <p>The first row must contain column headers exactly as shown in the templates below. Data starts on row 2.</p>
+            </div>
+
+            <h3>Downloading Templates</h3>
+            <p>In the Data Entry sidebar, click <strong>"Download CSV template"</strong> under each tab to get a pre-formatted template with sample data.</p>
+
+            <h3>Assets CSV Format</h3>
+            <div class="code-block">Asset ID,Asset Name,Type,Status,Location,Assigned To,Last Service Date,Service Interval Days,Odometer,Fuel Tank Size,Acquisition Date,Acquisition Cost,Notes
+A-001,Red F-150,Vehicle,Available,Main Yard,,2024-01-15,90,45000,26,2022-06-01,35000,Company truck
+A-002,Trailer #1,Trailer,Available,Main Yard,,,,,,,20000,Flatbed trailer
+A-003,Forklift,Equipment,In Use,Warehouse,John Smith,2024-02-01,30,1200,,2021-03-15,28000,Propane powered</div>
+
+            <table>
+                <tr>
+                    <th>Column</th>
+                    <th>Format</th>
+                    <th>Example</th>
+                </tr>
+                <tr><td>Asset ID</td><td>Text</td><td>A-001</td></tr>
+                <tr><td>Asset Name</td><td>Text</td><td>Red F-150</td></tr>
+                <tr><td>Type</td><td>Vehicle/Equipment/Tool/Trailer/Other</td><td>Vehicle</td></tr>
+                <tr><td>Status</td><td>Available/In Use/Maintenance/Retired</td><td>Available</td></tr>
+                <tr><td>Location</td><td>Text</td><td>Main Yard</td></tr>
+                <tr><td>Assigned To</td><td>Text</td><td>John Smith</td></tr>
+                <tr><td>Last Service Date</td><td>YYYY-MM-DD</td><td>2024-01-15</td></tr>
+                <tr><td>Service Interval Days</td><td>Number</td><td>90</td></tr>
+                <tr><td>Odometer</td><td>Number</td><td>45000</td></tr>
+                <tr><td>Fuel Tank Size</td><td>Number (gallons)</td><td>26</td></tr>
+                <tr><td>Acquisition Date</td><td>YYYY-MM-DD</td><td>2022-06-01</td></tr>
+                <tr><td>Acquisition Cost</td><td>Number (no $)</td><td>35000</td></tr>
+                <tr><td>Notes</td><td>Text</td><td>Company truck</td></tr>
+            </table>
+
+            <h3>Drivers CSV Format</h3>
+            <div class="code-block">Driver ID,Driver Name,Status,Phone,Email,Hire Date,License Number,License Expiry,License State,CDL Number,CDL Expiry,License Type,Medical Expiry,Notes
+DRV-001,John Smith,Active,(555) 123-4567,john@example.com,2023-01-15,DL123456,2026-06-15,TX,CDL789012,2025-06-15,Class A,2025-03-01,Experienced driver
+DRV-002,Jane Doe,Active,(555) 234-5678,jane@example.com,2022-06-01,DL234567,2025-12-01,TX,,,Non-CDL,2025-06-15,Local deliveries only</div>
+
+            <table>
+                <tr>
+                    <th>Column</th>
+                    <th>Format</th>
+                    <th>Example</th>
+                </tr>
+                <tr><td>Driver ID</td><td>Text</td><td>DRV-001</td></tr>
+                <tr><td>Driver Name</td><td>Text</td><td>John Smith</td></tr>
+                <tr><td>Status</td><td>Active/On Leave/Suspended/Terminated</td><td>Active</td></tr>
+                <tr><td>Phone</td><td>Text</td><td>(555) 123-4567</td></tr>
+                <tr><td>Email</td><td>Text</td><td>john@example.com</td></tr>
+                <tr><td>Hire Date</td><td>YYYY-MM-DD</td><td>2023-01-15</td></tr>
+                <tr><td>License Number</td><td>Text</td><td>DL123456</td></tr>
+                <tr><td>License Expiry</td><td>YYYY-MM-DD</td><td>2026-06-15</td></tr>
+                <tr><td>License State</td><td>2-letter code</td><td>TX</td></tr>
+                <tr><td>CDL Number</td><td>Text</td><td>CDL789012</td></tr>
+                <tr><td>CDL Expiry</td><td>YYYY-MM-DD</td><td>2025-06-15</td></tr>
+                <tr><td>License Type</td><td>Class A/B/C/Non-CDL</td><td>Class A</td></tr>
+                <tr><td>Medical Expiry</td><td>YYYY-MM-DD</td><td>2025-03-01</td></tr>
+                <tr><td>Notes</td><td>Text</td><td>Experienced driver</td></tr>
+            </table>
+
+            <h3>Maintenance CSV Format</h3>
+            <div class="code-block">Maintenance ID,Asset ID,Asset Name,Service Type,Scheduled Date,Parts Cost,Labor Cost,Completed Date,Status,Vendor,Invoice Number,Notes
+M-001,A-001,Red F-150,Oil Change,2024-02-15,45.00,30.00,2024-02-15,Completed,Quick Lube,INV-12345,Regular maintenance
+M-002,A-001,Red F-150,Tire Rotation,2024-03-01,0,25.00,,Scheduled,,,Due next month
+M-003,A-002,Trailer #1,Annual Inspection,2024-04-01,150.00,100.00,,Scheduled,Fleet Services,,DOT inspection</div>
+
+            <table>
+                <tr>
+                    <th>Column</th>
+                    <th>Format</th>
+                    <th>Example</th>
+                </tr>
+                <tr><td>Maintenance ID</td><td>Text</td><td>M-001</td></tr>
+                <tr><td>Asset ID</td><td>Text</td><td>A-001</td></tr>
+                <tr><td>Asset Name</td><td>Text</td><td>Red F-150</td></tr>
+                <tr><td>Service Type</td><td>Text</td><td>Oil Change</td></tr>
+                <tr><td>Scheduled Date</td><td>YYYY-MM-DD</td><td>2024-02-15</td></tr>
+                <tr><td>Parts Cost</td><td>Number (no $)</td><td>45.00</td></tr>
+                <tr><td>Labor Cost</td><td>Number (no $)</td><td>30.00</td></tr>
+                <tr><td>Completed Date</td><td>YYYY-MM-DD (blank if pending)</td><td>2024-02-15</td></tr>
+                <tr><td>Status</td><td>Scheduled/Completed/Overdue</td><td>Completed</td></tr>
+                <tr><td>Vendor</td><td>Text</td><td>Quick Lube</td></tr>
+                <tr><td>Invoice Number</td><td>Text</td><td>INV-12345</td></tr>
+                <tr><td>Notes</td><td>Text</td><td>Regular maintenance</td></tr>
+            </table>
+
+            <h3>Activity/Costs CSV Format</h3>
+            <div class="code-block">Date,Asset ID,Asset Name,Action Type,Employee,Location,Odometer,Fuel Gallons,Fuel Cost,Notes
+2024-01-15,A-001,Red F-150,Check-out,John Smith,Main Yard,45000,,,Picked up for delivery
+2024-01-15,A-001,Red F-150,Refuel,John Smith,Shell Station,45150,18.5,62.50,Regular fill-up
+2024-01-15,A-001,Red F-150,Check-in,John Smith,Main Yard,45200,,,Returned after delivery</div>
+
+            <h3>CSV Tips</h3>
+            <div class="tip">
+                <div class="tip-title">Date Format</div>
+                <p>Always use <strong>YYYY-MM-DD</strong> format (e.g., 2024-12-25). This ensures consistent date parsing.</p>
+            </div>
+
+            <div class="tip">
+                <div class="tip-title">Numbers</div>
+                <p>Don't include currency symbols ($) or thousand separators (,) in number fields. Use plain numbers like <strong>35000</strong> not <strong>$35,000</strong>.</p>
+            </div>
+
+            <div class="tip">
+                <div class="tip-title">Text with Commas</div>
+                <p>If your text contains commas, wrap it in double quotes: <strong>"Smith, John"</strong></p>
+            </div>
+
+            <div class="warning">
+                <div class="warning-title">Excel Users</div>
+                <p>When saving from Excel, choose "CSV (Comma delimited) (*.csv)" format. Excel may change date formats - double-check them before importing.</p>
+            </div>
+        </div>
+
+        <!-- SHEETS REFERENCE -->
+        <div id="sheets" class="section">
+            <h2>Sheet Reference</h2>
+
+            <h3>Assets Master</h3>
+            <p>Central repository of all tracked assets.</p>
+            <ul>
+                <li>Each asset needs a unique Asset ID</li>
+                <li>Status determines availability tracking</li>
+                <li>Service dates trigger maintenance alerts</li>
+                <li>Acquisition data used for cost tracking</li>
+            </ul>
+
+            <h3>Drivers</h3>
+            <p>DOT compliance tracking for all drivers.</p>
+            <ul>
+                <li>Tracks license, CDL, and medical card expirations</li>
+                <li>Monitors clearinghouse status</li>
+                <li>HOS (Hours of Service) and ELD compliance fields</li>
+                <li>DVIR (Driver Vehicle Inspection Report) tracking</li>
+            </ul>
+
+            <h3>Activity Log</h3>
+            <p>Records all asset usage events.</p>
+            <ul>
+                <li>Check-out/Check-in logs</li>
+                <li>Fuel purchase records</li>
+                <li>Maintenance events</li>
+                <li>Location updates and incidents</li>
+            </ul>
+
+            <h3>Maintenance Tracker</h3>
+            <p>Scheduled and completed maintenance records.</p>
+            <ul>
+                <li>Schedule upcoming maintenance</li>
+                <li>Track parts and labor costs separately</li>
+                <li>Store vendor and invoice information</li>
+                <li>Status automatically tracked (Scheduled/Completed/Overdue)</li>
+            </ul>
+
+            <h3>Cost Tracking</h3>
+            <p>Aggregated cost data per asset (auto-calculated).</p>
+            <ul>
+                <li>30-day fuel costs</li>
+                <li>YTD maintenance costs</li>
+                <li>Trip counts and averages</li>
+            </ul>
+
+            <h3>Config</h3>
+            <p>System settings and preferences.</p>
+            <table>
+                <tr>
+                    <th>Setting</th>
+                    <th>Description</th>
+                </tr>
+                <tr><td>Alert Email</td><td>Email address for all system alerts</td></tr>
+                <tr><td>Company Phone</td><td>Displayed in reports</td></tr>
+                <tr><td>Fuel Anomaly %</td><td>Threshold for flagging unusual fuel consumption (default: 20%)</td></tr>
+                <tr><td>Maintenance Days</td><td>Days before due to start alerting (default: 14)</td></tr>
+            </table>
+        </div>
+
+        <!-- ALERTS & REPORTS -->
+        <div id="alerts" class="section">
+            <h2>Alerts & Reports</h2>
+
+            <h3>Available Alerts</h3>
+
+            <h4>Daily Digest</h4>
+            <p>Menu: <strong>🚗 Tools > Send Daily Digest</strong></p>
+            <p>Comprehensive summary including:</p>
+            <ul>
+                <li>Fleet status overview</li>
+                <li>Today's activity summary</li>
+                <li>Overdue maintenance items</li>
+                <li>Upcoming maintenance (next 14 days)</li>
+                <li>Expiring driver credentials</li>
+                <li>Fuel anomalies detected</li>
+            </ul>
+
+            <h4>Maintenance Alert</h4>
+            <p>Dashboard: <strong>Maintenance View > Send Maintenance Alert Email</strong></p>
+            <p>Focused report on:</p>
+            <ul>
+                <li>All overdue maintenance with days overdue</li>
+                <li>Upcoming maintenance scheduled</li>
+                <li>Assets currently in maintenance status</li>
+            </ul>
+
+            <h4>Compliance Alert</h4>
+            <p>Dashboard: <strong>Compliance View > Send Compliance Alert Email</strong></p>
+            <p>Driver compliance report:</p>
+            <ul>
+                <li>Expired licenses, CDLs, medical cards</li>
+                <li>Credentials expiring within 30 days</li>
+                <li>Clearinghouse issues</li>
+            </ul>
+
+            <h4>Fuel Alert</h4>
+            <p>Dashboard: <strong>Fuel View > Send Fuel Alert Email</strong></p>
+            <p>Fuel consumption analysis:</p>
+            <ul>
+                <li>Anomalies detected (unusual fill-ups)</li>
+                <li>30-day consumption summary</li>
+                <li>Top fuel consumers</li>
+            </ul>
+
+            <h3>Setting Up Automated Alerts</h3>
+            <p>To receive daily automated alerts:</p>
+            <ol>
+                <li>Go to <strong>🚗 Tools > Function Runner > Initialize Function Runner</strong></li>
+                <li>Go to <strong>🚗 Tools > Function Runner > Setup Trigger</strong></li>
+                <li>This creates a daily trigger that runs the digest automatically</li>
+            </ol>
+
+            <div class="tip">
+                <div class="tip-title">Email Configuration</div>
+                <p>Make sure to set your alert email in the <strong>Config</strong> sheet before sending any alerts.</p>
+            </div>
+        </div>
+
+        <!-- TROUBLESHOOTING -->
+        <div id="troubleshooting" class="section">
+            <h2>Troubleshooting</h2>
+
+            <h3>Common Issues</h3>
+
+            <h4>"Sheet not found" Error</h4>
+            <p><strong>Cause:</strong> Required sheets haven't been created.</p>
+            <p><strong>Solution:</strong> Run <strong>🚗 Tools > 1. Build Complete Template</strong> first.</p>
+
+            <h4>Dashboard Not Loading</h4>
+            <p><strong>Cause:</strong> Pop-up blocker or script authorization.</p>
+            <p><strong>Solution:</strong></p>
+            <ol>
+                <li>Allow pop-ups for Google Sheets</li>
+                <li>If prompted, authorize the script to run</li>
+                <li>Try refreshing the page and reopening</li>
+            </ol>
+
+            <h4>CSV Import Failed</h4>
+            <p><strong>Cause:</strong> Incorrect CSV format.</p>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>Download the template and match the format exactly</li>
+                <li>Check date format is YYYY-MM-DD</li>
+                <li>Remove any $ symbols from numbers</li>
+                <li>Ensure no extra blank columns</li>
+            </ul>
+
+            <h4>Emails Not Sending</h4>
+            <p><strong>Cause:</strong> Email not configured or daily quota exceeded.</p>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>Check Config sheet has valid email address</li>
+                <li>Google limits emails to ~100/day for free accounts</li>
+                <li>Check spam folder</li>
+            </ul>
+
+            <h4>Maintenance Status Not Updating</h4>
+            <p><strong>Cause:</strong> Status column needs manual update or formula refresh.</p>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>For scheduled items, add a Completed Date to mark as complete</li>
+                <li>Use <strong>Refresh Dashboards</strong> from menu to update calculations</li>
+            </ul>
+
+            <h4>Asset Status Not Changing on Check-in/out</h4>
+            <p><strong>Cause:</strong> Asset ID doesn't match exactly.</p>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>Ensure Asset ID in Activity Log matches Assets Master exactly</li>
+                <li>IDs are case-sensitive (A-001 is different from a-001)</li>
+            </ul>
+
+            <h3>Getting Help</h3>
+            <p>For additional support, contact:</p>
+            <p><strong>True North Data Strategies</strong><br>
+            Email: jacob@truenorthstrategyops.com</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>G-Stack Asset Command User Manual v1.0</p>
+        <p>True North Data Strategies | <a href="mailto:jacob@truenorthstrategyops.com">jacob@truenorthstrategyops.com</a></p>
+    </div>
+
+    <button class="close-btn" onclick="google.script.host.close()">Close Manual</button>
+
+    <script>
+        function showSection(sectionId) {
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            // Scroll to top of content
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
+
